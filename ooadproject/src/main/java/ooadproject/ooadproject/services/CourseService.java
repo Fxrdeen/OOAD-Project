@@ -14,4 +14,10 @@ public class CourseService {
     public List<Courses> getAllCourses() {
         return courseRepository.findAll();
     }
+
+    public Courses getCourseById(String id) {
+        return courseRepository.findById(id).orElse(null);
+    }
+
+    
 }

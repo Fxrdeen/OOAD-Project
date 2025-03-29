@@ -14,4 +14,8 @@ public class UserService {
     public List<Users> getAllUsers() {
         return userRepository.findAll();
     }
+
+    public Users getUserById(String id) {
+        return userRepository.findById(id).orElse(null);
+    }
 }

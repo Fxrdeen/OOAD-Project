@@ -28,27 +28,17 @@ const Navbar = ({
       </motion.div>
 
       <div className="flex gap-8">
-        <motion.a
-          whileHover={{ scale: 1.1 }}
-          className="text-gray-300 hover:text-white"
-          href="#"
-        >
+        <Link href="/courses" className="text-gray-300 hover:text-white">
           Courses
-        </motion.a>
-        <motion.a
-          whileHover={{ scale: 1.1 }}
-          className="text-gray-300 hover:text-white"
-          href="#"
-        >
+        </Link>
+
+        <Link href="/about" className="text-gray-300 hover:text-white">
           About
-        </motion.a>
-        <motion.a
-          whileHover={{ scale: 1.1 }}
-          className="text-gray-300 hover:text-white"
-          href="#"
-        >
+        </Link>
+
+        <Link href="/contact" className="text-gray-300 hover:text-white">
           Contact
-        </motion.a>
+        </Link>
       </div>
 
       {isAuthenticated ? (
@@ -135,14 +125,14 @@ const Footer = () => {
           <h4 className="text-white font-bold mb-4">Quick Links</h4>
           <ul className="space-y-2">
             <li>
-              <a href="#" className="hover:text-white">
+              <Link href="/" className="hover:text-white">
                 Home
-              </a>
+              </Link>
             </li>
             <li>
-              <a href="#" className="hover:text-white">
+              <Link href="/courses" className="hover:text-white">
                 Courses
-              </a>
+              </Link>
             </li>
             <li>
               <a href="#" className="hover:text-white">

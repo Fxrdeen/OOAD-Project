@@ -3,6 +3,8 @@ package ooadproject.ooadproject.controllers;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+
 import java.util.List;
 import ooadproject.ooadproject.models.Courses;
 import ooadproject.ooadproject.services.CourseService;
@@ -21,4 +23,13 @@ public class CoursesController {
     public List<Courses> getAllCourses() {
         return courseService.getAllCourses();
     }
+
+    @GetMapping("/{id}")
+    public Courses getCourseById(@PathVariable String id) {
+        return courseService.getCourseById(id);
+    }
+
+    
+    
+
 }
