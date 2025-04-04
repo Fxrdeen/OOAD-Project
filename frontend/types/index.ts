@@ -38,3 +38,10 @@ export interface LoginErrorResponse {
   path: string;
   trace?: string;
 }
+
+export interface Lesson {
+  id: string;
+  title: string;
+  chapters: string[];
+  courseId: string;
+}

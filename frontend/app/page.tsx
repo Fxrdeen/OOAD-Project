@@ -29,9 +29,11 @@ const Navbar = ({
 
       <div className="flex gap-8">
         <Link href="/courses" className="text-gray-300 hover:text-white">
-          Courses
+          Explore Courses
         </Link>
-
+        <Link href="/enrolled" className="text-gray-300 hover:text-white">
+          Enrolled Courses
+        </Link>
         <Link href="/about" className="text-gray-300 hover:text-white">
           About
         </Link>

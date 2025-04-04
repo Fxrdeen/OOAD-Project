@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { Course, Users } from "@/types";
+import { Course, Lesson, Users } from "@/types";
 import { Button } from "@/components/ui/button";
 import {
   CheckCircle,
@@ -14,6 +14,7 @@ import {
   Star,
   User,
 } from "lucide-react";
+import { toast } from "sonner";
 
 // Navbar component
 const Navbar = ({
@@ -25,6 +26,7 @@ const Navbar = ({
   user: any;
   handleLogout: () => void;
 }) => {
+  console.log(user);
   return (
     <motion.nav
       initial={{ opacity: 0, y: -20 }}
@@ -43,9 +45,11 @@ const Navbar = ({
 
       <div className="flex gap-8">
         <Link href="/courses" className="text-white font-medium">
-          Courses
+          Explore Courses
         </Link>
-
+        <Link href="/enrolled" className="text-gray-300 hover:text-white">
+          Enrolled Courses
+        </Link>
         <Link href="/about" className="text-gray-300 hover:text-white">
           About
         </Link>
@@ -182,81 +186,13 @@ const Footer = () => {
 };
 
 // Curriculum Section component
-const CurriculumSection = () => {
-  // Dummy curriculum data
-  const sections = [
-    {
-      title: "Getting Started",
-      lessons: [
-        {
-          title: "Introduction to the Course",
-          duration: "10:15",
-          preview: true,
-        },
-        {
-          title: "Setting Up Your Environment",
-          duration: "15:30",
-          preview: false,
-        },
-        { title: "Understanding the Basics", duration: "12:45", preview: true },
-      ],
-    },
-    {
-      title: "Core Concepts",
-      lessons: [
-        { title: "Fundamental Principles", duration: "18:20", preview: false },
-        {
-          title: "Building Your First Project",
-          duration: "25:10",
-          preview: false,
-        },
-        { title: "Advanced Techniques", duration: "20:45", preview: false },
-        {
-          title: "Common Patterns and Practices",
-          duration: "16:30",
-          preview: false,
-        },
-      ],
-    },
-    {
-      title: "Real-World Applications",
-      lessons: [
-        {
-          title: "Case Study: Enterprise Implementation",
-          duration: "22:15",
-          preview: false,
-        },
-        {
-          title: "Performance Optimization",
-          duration: "19:40",
-          preview: false,
-        },
-        {
-          title: "Debugging and Troubleshooting",
-          duration: "17:55",
-          preview: false,
-        },
-      ],
-    },
-    {
-      title: "Final Project",
-      lessons: [
-        {
-          title: "Project Planning and Setup",
-          duration: "14:25",
-          preview: false,
-        },
-        { title: "Implementation Steps", duration: "28:30", preview: false },
-        { title: "Testing and Deployment", duration: "21:15", preview: false },
-        {
-          title: "Course Conclusion and Next Steps",
-          duration: "10:05",
-          preview: false,
-        },
-      ],
-    },
-  ];
-
+const CurriculumSection = ({
+  lessons,
+  course,
+}: {
+  lessons: Lesson[];
+  course: Course;
+}) => {
   const [expandedSections, setExpandedSections] = useState<number[]>([0]);
 
   const toggleSection = (index: number) => {
@@ -272,66 +208,42 @@ const CurriculumSection = () => {
       <h2 className="text-2xl font-bold mb-6">Course Curriculum</h2>
 
       <div className="space-y-4">
-        {sections.map((section, sectionIndex) => (
+        {lessons?.map((lesson, lessonIndex) => (
           <motion.div
-            key={sectionIndex}
+            key={lessonIndex}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: sectionIndex * 0.1 }}
+            transition={{ duration: 0.3, delay: lessonIndex * 0.1 }}
             className="border border-gray-700 rounded-lg overflow-hidden"
           >
             <div
               className="bg-gray-800/70 p-4 flex justify-between items-center cursor-pointer"
-              onClick={() => toggleSection(sectionIndex)}
+              onClick={() => toggleSection(lessonIndex)}
             >
               <div className="flex items-center gap-3">
-                <div className="text-lg font-medium">{section.title}</div>
+                <div className="text-lg font-medium">{lesson.title}</div>
                 <div className="text-sm text-gray-400">
-                  {section.lessons.length} lessons •{" "}
-                  {section.lessons
-                    .reduce(
-                      (acc, lesson) =>
-                        acc +
-                        parseInt(lesson.duration.split(":")[0]) +
-                        parseInt(lesson.duration.split(":")[1]) / 60,
-                      0
-                    )
-                    .toFixed(1)}{" "}
-                  hours
+                  {lesson.chapters.length} chapters
                 </div>
               </div>
               <div className="text-gray-400">
-                {expandedSections.includes(sectionIndex) ? "−" : "+"}
+                {expandedSections.includes(lessonIndex) ? "−" : "+"}
               </div>
             </div>
 
-            {expandedSections.includes(sectionIndex) && (
+            {expandedSections.includes(lessonIndex) && (
               <div className="divide-y divide-gray-700">
-                {section.lessons.map((lesson, lessonIndex) => (
+                {lesson.chapters.map((chapter, chapterIndex) => (
                   <motion.div
-                    key={lessonIndex}
+                    key={chapterIndex}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ duration: 0.2, delay: lessonIndex * 0.05 }}
+                    transition={{ duration: 0.2, delay: chapterIndex * 0.05 }}
                     className="p-4 flex justify-between items-center bg-gray-900/50 hover:bg-gray-800/50"
                   >
                     <div className="flex items-center gap-3">
                       <PlayCircle size={18} className="text-gray-400" />
-                      <span
-                        className={
-                          lesson.preview ? "text-white" : "text-gray-300"
-                        }
-                      >
-                        {lesson.title}
-                      </span>
-                      {lesson.preview && (
-                        <span className="text-xs bg-blue-900/50 text-blue-300 px-2 py-0.5 rounded">
-                          Preview
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-sm text-gray-400">
-                      {lesson.duration}
+                      <span>{chapter}</span>
                     </div>
                   </motion.div>
                 ))}
@@ -342,25 +254,7 @@ const CurriculumSection = () => {
       </div>
 
       <div className="mt-6 text-center">
-        <p className="text-gray-400 mb-4">
-          {sections.reduce((acc, section) => acc + section.lessons.length, 0)}{" "}
-          lessons •{" "}
-          {sections
-            .reduce(
-              (acc, section) =>
-                acc +
-                section.lessons.reduce(
-                  (acc2, lesson) =>
-                    acc2 +
-                    parseInt(lesson.duration.split(":")[0]) +
-                    parseInt(lesson.duration.split(":")[1]) / 60,
-                  0
-                ),
-              0
-            )
-            .toFixed(1)}{" "}
-          hours total length
-        </p>
+        <p className="text-gray-400 mb-4">{course.hours} hours total length</p>
       </div>
     </div>
   );
@@ -374,7 +268,8 @@ const CoursePage = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<Users | null>(null);
   const [instructor, setInstructor] = useState<Users | null>(null);
-
+  const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [enrolled, setEnrolled] = useState(false);
   // Mock course details (will be replaced with actual data)
   const mockCourseDetails = {
     lastUpdated: "June 2023",
@@ -403,12 +298,62 @@ const CoursePage = () => {
     }
   };
 
+  async function handleEnroll(userId: string, courseId: string) {
+    try {
+      const response = await fetch(
+        `http://localhost:8090/enroll/${userId}/${courseId}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("authToken")}`, // If using JWT auth
+          },
+        }
+      );
+      if (response.ok) {
+        toast.success("Enrolled in course successfully");
+        setEnrolled(true);
+      } else if (response.status === 409) {
+        toast.error("You are already enrolled in this course");
+      } else {
+        toast.error("Failed to enroll in course");
+      }
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  }
+
   // Fetch course data
   useEffect(() => {
     if (typeof window !== "undefined") {
       const userData = localStorage.getItem("userData");
-      setUser(userData ? JSON.parse(userData) : null);
+      const parsedUser = userData ? JSON.parse(userData) : null;
+      setUser(parsedUser);
+
+      // Check enrollment status if user exists
+      if (parsedUser?.id) {
+        const checkEnrollment = async () => {
+          try {
+            const response = await fetch(
+              `http://localhost:8090/enroll/${parsedUser.id}/${params.id}`
+            );
+            if (response.ok) {
+              const res = await response.json();
+              console.log(res);
+              setEnrolled(true);
+            } else {
+              setEnrolled(false);
+            }
+          } catch (error) {
+            console.error("Failed to check enrollment status:", error);
+            setEnrolled(false);
+          }
+        };
+
+        checkEnrollment();
+      }
     }
+
     const fetchCourse = async () => {
       try {
         setLoading(true);
@@ -424,10 +369,16 @@ const CoursePage = () => {
             const instructorRes = await fetch(
               `http://localhost:8090/users/${data.instructorId}`
             );
+            const lessonsRes = await fetch(
+              `http://localhost:8090/lessons/course/${data.id}`
+            );
+            if (lessonsRes.ok) {
+              const lessonsData = await lessonsRes.json();
+              setLessons(lessonsData);
+            }
             if (instructorRes.ok) {
               const instructorData = await instructorRes.json();
               setInstructor(instructorData);
-              console.log(instructorData);
             }
           } catch (instructorError) {
             console.error("Failed to fetch instructor:", instructorError);
@@ -596,10 +547,13 @@ const CoursePage = () => {
                     </Button>
                   ) : (
                     <Button
-                      className="w-full bg-gradient-to-r from-purple-600 to-blue-600 py-6 text-lg"
-                      // onClick={handleEnroll}
+                      className={`w-full bg-gradient-to-r from-purple-600 to-blue-600 py-6 text-lg cursor-pointer ${
+                        enrolled ? "bg-gray-600" : ""
+                      }`}
+                      onClick={() => handleEnroll(user?.id!, course.id)}
+                      disabled={enrolled}
                     >
-                      Enroll Now
+                      {enrolled ? "Enrolled" : "Enroll Now"}
                     </Button>
                   )}
                 </div>
@@ -683,7 +637,7 @@ const CoursePage = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
-              <CurriculumSection />
+              <CurriculumSection lessons={lessons} course={course} />
             </motion.div>
 
             {/* Instructor */}
