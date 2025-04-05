@@ -38,9 +38,16 @@ const Navbar = ({
         <Link href="/courses" className="text-white font-medium">
           Explore Courses
         </Link>
-        <Link href="/enrolled" className="text-gray-300 hover:text-white">
-          Enrolled Courses
-        </Link>
+        {user.role === "INSTRUCTOR" && (
+          <Link href="/instructor" className="text-gray-300 hover:text-white">
+            Add Course
+          </Link>
+        )}
+        {user.role === "STUDENT" && (
+          <Link href="/enrolled" className="text-gray-300 hover:text-white">
+            Enrolled Courses
+          </Link>
+        )}
         <Link href="/about" className="text-gray-300 hover:text-white">
           About
         </Link>

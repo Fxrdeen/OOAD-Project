@@ -44,4 +44,12 @@ export interface Lesson {
   title: string;
   chapters: string[];
   courseId: string;
+  order: number;
+}
+
+export interface EnrolledCourse {
+  id: string;
+  userId: string;
+  courseId: string;
+  enrolledAt: string;
 }
