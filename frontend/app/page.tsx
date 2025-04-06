@@ -365,12 +365,14 @@ export default function Home() {
             transition={{ duration: 0.5, delay: 0.6 }}
             className="flex gap-4"
           >
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              className="px-6 py-3 rounded-md bg-gradient-to-r from-purple-600 to-blue-600 text-white font-medium"
-            >
-              Explore Courses
-            </motion.button>
+            <Link href="/courses">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                className="px-6 py-3 rounded-md bg-gradient-to-r from-purple-600 to-blue-600 text-white font-medium"
+              >
+                Explore Courses
+              </motion.button>
+            </Link>
             <motion.button
               whileHover={{ scale: 1.05 }}
               className="px-6 py-3 rounded-md border border-gray-700 text-gray-300 font-medium"

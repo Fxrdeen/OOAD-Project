@@ -25,6 +25,15 @@ import {
 import { useParams } from "next/navigation";
 import { Checkbox } from "@/components/ui/checkbox";
 
+interface LessonProgress {
+  id: string;
+  userId: string;
+  courseId: string;
+  lessonId: string;
+  completed: boolean;
+  completedAt: string;
+}
+
 const EnrolledCoursePage = () => {
   const [course, setCourse] = useState<Course | null>(null);
   const [lessons, setLessons] = useState<Lesson[]>([]);
@@ -32,12 +41,55 @@ const EnrolledCoursePage = () => {
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [selectedChapter, setSelectedChapter] = useState<string>("");
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [completedLessons, setCompletedLessons] = useState<string[]>([]);
+  const [completedLessons, setCompletedLessons] = useState<
+    Record<string, boolean>
+  >({});
   const [expandedLessons, setExpandedLessons] = useState<string[]>([]);
   const [checkedChapters, setCheckedChapters] = useState<Set<string>>(
     new Set()
   );
   const { id } = useParams();
+  const [user, setUser] = useState<any>(null);
+
+  // Function to check if a lesson is completed
+  const isLessonCompleted = (lessonId: string) => {
+    return completedLessons[lessonId] === true;
+  };
+
+  // Function to fetch lesson progress from the backend
+  const fetchLessonProgress = async () => {
+    if (!user || !id) return;
+
+    try {
+      const token = localStorage.getItem("authToken");
+      if (!token) return;
+
+      const progressResponse = await fetch(
+        `http://localhost:8090/lesson-progress/${user.id}/${id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (progressResponse.ok) {
+        const progressData: LessonProgress[] = await progressResponse.json();
+        console.log("Progress data:", progressData);
+        // Create a map of lessonId to completion status
+        const completionMap: Record<string, boolean> = {};
+
+        for (const progress of progressData) {
+          completionMap[progress.lessonId] = progress.completed;
+        }
+
+        console.log("Lesson completion map:", completionMap);
+        setCompletedLessons(completionMap);
+      }
+    } catch (error) {
+      console.error("Error fetching lesson progress:", error);
+    }
+  };
 
   useEffect(() => {
     const fetchCourseAndLessons = async () => {
@@ -54,9 +106,17 @@ const EnrolledCoursePage = () => {
           return;
         }
 
+        const parsedUser = JSON.parse(userData);
+        setUser(parsedUser);
+
         // Fetch course details
         const courseResponse = await fetch(
-          `http://localhost:8090/courses/${id}`
+          `http://localhost:8090/courses/${id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
         );
 
         if (courseResponse.ok) {
@@ -88,6 +148,9 @@ const EnrolledCoursePage = () => {
               }
               setExpandedLessons([sortedLessons[0].id]);
             }
+
+            // Fetch lesson progress
+            await fetchLessonProgress();
           }
         }
       } catch (error) {
@@ -103,6 +166,13 @@ const EnrolledCoursePage = () => {
 
     fetchCourseAndLessons();
   }, [id]);
+
+  // Fetch lesson progress when user is set
+  useEffect(() => {
+    if (user) {
+      fetchLessonProgress();
+    }
+  }, [user, id]);
 
   const handleChapterClick = (lesson: Lesson, chapter: string) => {
     setSelectedLesson(lesson);
@@ -137,14 +207,13 @@ const EnrolledCoursePage = () => {
   };
 
   const handleCompleteLesson = async () => {
-    if (!selectedLesson || !areAllChaptersChecked(selectedLesson)) return;
+    if (!selectedLesson || !areAllChaptersChecked(selectedLesson) || !user)
+      return;
 
     try {
       const token = localStorage.getItem("authToken");
-      const userData = localStorage.getItem("userData");
-      const user = userData ? JSON.parse(userData) : null;
 
-      if (!token || !user) {
+      if (!token) {
         toast.error("Please login to continue", {
           className: "bg-gray-800 text-white border border-gray-700",
           duration: 3000,
@@ -152,19 +221,49 @@ const EnrolledCoursePage = () => {
         return;
       }
 
-      setCompletedLessons((prev) => [...prev, selectedLesson.id]);
-      // Clear checked chapters for this lesson
-      setCheckedChapters((prev) => {
-        const newSet = new Set(prev);
-        selectedLesson.chapters.forEach((chapter) => {
-          newSet.delete(`${selectedLesson.id}-${chapter}`);
+      // Call the API to mark lesson as complete
+      const response = await fetch(
+        `http://localhost:8090/lesson-progress/complete/${user.id}/${id}/${selectedLesson.id}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.ok) {
+        // Update local state
+        setCompletedLessons((prev) => ({
+          ...prev,
+          [selectedLesson.id]: true,
+        }));
+
+        // Clear checked chapters for this lesson
+        setCheckedChapters((prev) => {
+          const newSet = new Set(prev);
+          selectedLesson.chapters.forEach((chapter) => {
+            newSet.delete(`${selectedLesson.id}-${chapter}`);
+          });
+          return newSet;
         });
-        return newSet;
-      });
-      toast.success("Lesson completed successfully!", {
-        className: "bg-gray-800 text-white border border-gray-700",
-        duration: 3000,
-      });
+
+        toast.success("Lesson completed successfully!", {
+          className: "bg-gray-800 text-white border border-gray-700",
+          duration: 3000,
+        });
+
+        // Refresh lesson progress to ensure UI is updated
+        await fetchLessonProgress();
+      } else {
+        const errorData = await response.text();
+        toast.error(`Failed to complete lesson: ${errorData}`, {
+          className: "bg-gray-800 text-white border border-gray-700",
+          duration: 3000,
+        });
+      }
+
       setShowConfirmDialog(false);
     } catch (error) {
       console.error("Failed to complete lesson:", error);
@@ -206,11 +305,8 @@ const EnrolledCoursePage = () => {
                     </span>
                     <div className="flex items-center gap-2">
                       {lesson.title}
-                      {completedLessons.includes(lesson.id) && (
-                        <CheckCircle
-                          size={16}
-                          className="text-green-500 ml-2"
-                        />
+                      {isLessonCompleted(lesson.id) && (
+                        <CheckCircle size={16} className="text-green-500" />
                       )}
                     </div>
                   </div>
@@ -253,7 +349,7 @@ const EnrolledCoursePage = () => {
                             onCheckedChange={() =>
                               handleChapterCheck(lesson.id, chapter)
                             }
-                            disabled={completedLessons.includes(lesson.id)}
+                            disabled={isLessonCompleted(lesson.id)}
                             className="border-gray-600"
                           />
                         </div>
@@ -289,11 +385,11 @@ const EnrolledCoursePage = () => {
                   onClick={() => setShowConfirmDialog(true)}
                   className="bg-gradient-to-r from-purple-600 to-blue-600"
                   disabled={
-                    completedLessons.includes(selectedLesson.id) ||
+                    isLessonCompleted(selectedLesson.id) ||
                     !areAllChaptersChecked(selectedLesson)
                   }
                 >
-                  {completedLessons.includes(selectedLesson.id)
+                  {isLessonCompleted(selectedLesson.id)
                     ? "Lesson Completed"
                     : "Complete Lesson"}
                 </Button>

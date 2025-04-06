@@ -1,10 +1,12 @@
 package ooadproject.ooadproject.models;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.TypeAlias;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
 @Document(collection = "users")
+@TypeAlias("")
 public class Users {
     @Id
     private String id;
