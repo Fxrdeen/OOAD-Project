@@ -24,4 +24,9 @@ public class LessonService {
     public List<Lessons> getAllLessons() {
         return lessonRepository.findAll();
     }
+
+    public String createLesson(Lessons lesson) {
+        return lessonRepository.save(lesson).getId();
+        
+    }
 }

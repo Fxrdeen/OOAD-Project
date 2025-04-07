@@ -10,6 +10,9 @@ import ooadproject.ooadproject.models.Courses;
 import ooadproject.ooadproject.services.CourseService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+
 
 
 
@@ -35,6 +38,12 @@ public class CoursesController {
     public List<Courses> getCoursesByInstructorId(@PathVariable String instructorId) {
         return courseService.getCoursesByInstructorId(instructorId);
     }    
+    
+    @PostMapping("/create")
+    public String createCourse(@RequestBody Courses course) {
+        return courseService.createCourse(course);
+        
+    }
     
 
 }

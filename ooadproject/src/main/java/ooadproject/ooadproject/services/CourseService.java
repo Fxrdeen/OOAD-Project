@@ -24,5 +24,10 @@ public class CourseService {
         return courseRepository.findByInstructorId(new ObjectId(instructorId));
     }
 
+    public String createCourse(Courses course) {
+        Courses savedCourse = courseRepository.save(course);
+        return savedCourse.getId();
+    }
+
 
 }

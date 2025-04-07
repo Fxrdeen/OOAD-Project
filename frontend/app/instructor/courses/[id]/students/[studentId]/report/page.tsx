@@ -278,7 +278,7 @@ const StudentReportPage = () => {
 
         // Fetch enrollment date
         const enrollmentResponse = await fetch(
-          `http://localhost:8090/enroll/${params.studentId}/${params.courseId}`,
+          `http://localhost:8090/enroll/${params.studentId}/${params.id}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -293,7 +293,7 @@ const StudentReportPage = () => {
 
         // Fetch all lessons for the course
         const lessonsResponse = await fetch(
-          `http://localhost:8090/lessons/course/${params.courseId}`,
+          `http://localhost:8090/lessons/course/${params.id}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -342,7 +342,7 @@ const StudentReportPage = () => {
     };
 
     fetchData();
-  }, [params.courseId, params.studentId, router]);
+  }, [params.id, params.studentId, router]);
 
   const findLessonProgress = (lessonId: string) => {
     return lessonProgress.find((progress) => progress.lessonId === lessonId);
@@ -518,7 +518,9 @@ const StudentReportPage = () => {
             <h2 className="text-2xl font-bold">Course Quiz</h2>
           </div>
 
-          {completionPercentage === 100 ? (
+          {lessons.length -
+            lessonProgress.filter((lp) => lp.completed).length ===
+          0 ? (
             <div>
               <div className="flex items-center justify-between mb-6">
                 <div>
@@ -565,34 +567,6 @@ const StudentReportPage = () => {
               </p>
             </div>
           )}
-        </motion.div>
-
-        {/* Certificate Section (Disabled) */}
-        <motion.div
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.8 }}
-          className="bg-gray-800/40 rounded-lg border border-gray-700 p-6"
-        >
-          <div className="flex items-center gap-3 mb-6">
-            <Trophy size={24} className="text-yellow-500" />
-            <h2 className="text-2xl font-bold">Course Certificate</h2>
-          </div>
-
-          <div className="bg-gray-800/80 rounded-lg p-6 border border-gray-700 text-center">
-            <BadgeCheck size={64} className="text-gray-500 mx-auto mb-4" />
-            <h3 className="text-xl font-bold mb-2">
-              Certificate Not Available
-            </h3>
-            <p className="text-gray-400 mb-6">
-              The student must complete all lessons and pass the final quiz to
-              receive a certificate.
-            </p>
-
-            <div className="inline-block px-4 py-2 bg-gray-700 rounded-lg text-gray-400">
-              Requirements: 100% Lessons + Passing Quiz Score
-            </div>
-          </div>
         </motion.div>
       </div>
     </div>

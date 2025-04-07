@@ -342,7 +342,7 @@ const YourCourses = () => {
               Your Courses
             </motion.h1>
 
-            <Link href="/instructor/create-course">
+            <Link href="/instructor/create">
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -387,7 +387,7 @@ const YourCourses = () => {
             <p className="text-gray-400 mb-6">
               Start creating your first course to begin your teaching journey.
             </p>
-            <Link href="/instructor/create-course">
+            <Link href="/instructor/create">
               <Button className="bg-gradient-to-r from-purple-600 to-blue-600">
                 Create Your First Course
               </Button>

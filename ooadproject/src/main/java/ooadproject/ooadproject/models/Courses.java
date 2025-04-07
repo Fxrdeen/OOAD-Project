@@ -3,6 +3,7 @@ package ooadproject.ooadproject.models;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
+import org.bson.types.ObjectId;
 
 @Document(collection = "courses")
 public class Courses {
@@ -11,7 +12,7 @@ public class Courses {
     private String title;
     private String description;
     @Field("instructor_id")
-    private String instructorId;
+    private ObjectId instructorId;
     private String difficulty;
     private Integer hours;
     private Integer lessons;
@@ -26,7 +27,7 @@ public class Courses {
         this.id = id;
         this.title = title;
         this.description = description;
-        this.instructorId = instructorId;
+        this.instructorId = new ObjectId(instructorId)  ;
         this.difficulty = difficulty;
         this.hours = hours;
         this.lessons = lessons;
@@ -38,7 +39,7 @@ public class Courses {
     public Courses(String title, String description, String instructorId, String difficulty, Integer hours, Integer lessons, String price, Integer rating   ) {
         this.title = title;
         this.description = description;
-        this.instructorId = instructorId;
+        this.instructorId = new ObjectId(instructorId);
         this.difficulty = difficulty;
         this.hours = hours;
         this.lessons = lessons;
@@ -60,11 +61,11 @@ public class Courses {
     }
 
     public String getInstructorId() {
-        return instructorId;
+        return instructorId.toString();
     }
     
     public String getDifficulty() {
-        return difficulty;
+            return difficulty;
     }
     
     public Integer getHours() {
@@ -97,7 +98,7 @@ public class Courses {
     }
 
     public void setInstructorId(String instructorId) {
-        this.instructorId = instructorId;
+        this.instructorId = new ObjectId(instructorId);
     }
 
     public void setDifficulty(String difficulty) {

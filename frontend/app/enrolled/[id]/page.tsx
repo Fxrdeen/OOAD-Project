@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/accordion";
 import { useParams } from "next/navigation";
 import { Checkbox } from "@/components/ui/checkbox";
+import Link from "next/link";
 
 interface LessonProgress {
   id: string;
@@ -274,6 +275,13 @@ const EnrolledCoursePage = () => {
     }
   };
 
+  // Add this function to check if all lessons are completed
+  const areAllLessonsCompleted = () => {
+    if (lessons.length === 0) return false;
+
+    return lessons.every((lesson) => isLessonCompleted(lesson.id));
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen bg-gray-950">
@@ -395,6 +403,74 @@ const EnrolledCoursePage = () => {
                 </Button>
               </div>
             </div>
+
+            {/* Quiz Section - Only show when all lessons are completed */}
+            {areAllLessonsCompleted() && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="max-w-3xl mt-12 pt-8 border-t border-gray-700"
+              >
+                <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 bg-blue-900/30 rounded-lg">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="text-blue-500"
+                      >
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M12 16v-4" />
+                        <path d="M12 8h.01" />
+                      </svg>
+                    </div>
+                    <h2 className="text-xl font-bold text-white">
+                      Course Quiz
+                    </h2>
+                  </div>
+
+                  <p className="text-gray-300 mb-6">
+                    Congratulations on completing all lessons! Test your
+                    knowledge and earn your certificate by taking the final
+                    quiz.
+                  </p>
+
+                  <div className="flex justify-center">
+                    <Link href={`/enrolled/${id}/quiz`}>
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium rounded-lg flex items-center gap-2"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="20"
+                          height="20"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+                          <path d="m9 9.5 1.5 2L15 7" />
+                        </svg>
+                        Take Quiz
+                      </motion.button>
+                    </Link>
+                  </div>
+                </div>
+              </motion.div>
+            )}
           </div>
         ) : (
           <div className="flex items-center justify-center h-full">

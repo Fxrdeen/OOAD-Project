@@ -400,7 +400,7 @@ export default function Home() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {courses.map((course: Course, index: number) => (
+          {courses.slice(0, 6).map((course: Course, index: number) => (
             <CourseCard key={course.id} course={course} />
           ))}
         </div>
