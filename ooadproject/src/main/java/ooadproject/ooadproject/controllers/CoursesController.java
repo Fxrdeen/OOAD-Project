@@ -11,6 +11,8 @@ import ooadproject.ooadproject.services.CourseService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
 
+
+
 @RestController
 @CrossOrigin(origins = "*")
 @RequestMapping("/courses")
@@ -28,8 +30,11 @@ public class CoursesController {
     public Courses getCourseById(@PathVariable String id) {
         return courseService.getCourseById(id);
     }
-
     
+    @GetMapping("/instructor/{instructorId}")
+    public List<Courses> getCoursesByInstructorId(@PathVariable String instructorId) {
+        return courseService.getCoursesByInstructorId(instructorId);
+    }    
     
 
 }

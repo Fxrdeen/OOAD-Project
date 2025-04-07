@@ -71,4 +71,9 @@ public class EnrollController {
                 .body("Error fetching user enrollments: " + e.getMessage());
         }
     }
+
+    @GetMapping("/students/{courseId}")
+    public ResponseEntity<?> getStudentsByCourseId(@PathVariable String courseId) {
+        return ResponseEntity.ok(enrollService.findAllStudentsByCourseId(courseId));
+    }
 }

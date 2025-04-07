@@ -49,7 +49,7 @@ const Navbar = ({
         </Link>
         {user.role === "INSTRUCTOR" && (
           <Link href="/instructor" className="text-gray-300 hover:text-white">
-            Add Course
+            Your Courses
           </Link>
         )}
         {user.role === "STUDENT" && (

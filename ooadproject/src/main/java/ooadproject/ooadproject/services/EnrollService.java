@@ -24,4 +24,8 @@ public class EnrollService {
     public List<Enroll> findByUserId(String userId) {
         return enrollRepository.findByUserId(userId);
     }
+
+    public List<Enroll> findAllStudentsByCourseId(String courseId) {
+        return enrollRepository.findAllStudentsByCourseId(courseId);
+    }
 }

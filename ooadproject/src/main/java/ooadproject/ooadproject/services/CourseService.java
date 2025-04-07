@@ -1,5 +1,6 @@
 package ooadproject.ooadproject.services;
 import org.springframework.stereotype.Service;
+import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import java.util.List;
 import ooadproject.ooadproject.models.Courses;
@@ -19,5 +20,9 @@ public class CourseService {
         return courseRepository.findById(id).orElse(null);
     }
 
-    
+    public List<Courses> getCoursesByInstructorId(String instructorId) {
+        return courseRepository.findByInstructorId(new ObjectId(instructorId));
+    }
+
+
 }

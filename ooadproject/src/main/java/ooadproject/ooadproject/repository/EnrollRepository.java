@@ -8,4 +8,5 @@ import ooadproject.ooadproject.models.Enroll;
 public interface EnrollRepository extends MongoRepository<Enroll, String> {
     Enroll findByUserIdAndCourseId(String userId, String courseId);
     List<Enroll> findByUserId(String userId);
+    List<Enroll> findAllStudentsByCourseId(String courseId);
 }
