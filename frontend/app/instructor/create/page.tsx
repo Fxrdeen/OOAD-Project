@@ -16,6 +16,8 @@ import {
   Book,
   BookOpen,
   Layers,
+  Check,
+  HelpCircle,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -37,6 +39,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 // Navbar component
 const Navbar = ({
@@ -155,8 +158,28 @@ const lessonsFormSchema = z.object({
     .min(1, { message: "At least one lesson is required" }),
 });
 
+// Add this schema after the lessonsFormSchema
+const quizFormSchema = z.object({
+  questions: z
+    .array(
+      z.object({
+        question: z
+          .string()
+          .min(5, { message: "Question must be at least 5 characters" }),
+        options: z
+          .array(z.string().min(1, { message: "Option cannot be empty" }))
+          .length(4, { message: "Exactly 4 options are required" }),
+        answer: z
+          .string()
+          .min(1, { message: "Please select the correct answer" }),
+      })
+    )
+    .min(1, { message: "At least one question is required" }),
+});
+
 type CourseFormValues = z.infer<typeof courseFormSchema>;
 type LessonsFormValues = z.infer<typeof lessonsFormSchema>;
+type QuizFormValues = z.infer<typeof quizFormSchema>;
 
 const CreateCoursePage = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -165,6 +188,7 @@ const CreateCoursePage = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<any>(null);
   const router = useRouter();
+  const [courseId, setCourseId] = useState<string>("");
 
   // Initialize course form
   const courseForm = useForm<CourseFormValues>({
@@ -199,6 +223,30 @@ const CreateCoursePage = () => {
   } = useFieldArray({
     control: lessonsForm.control,
     name: "lessons",
+  });
+
+  // Initialize quiz form
+  const quizForm = useForm<QuizFormValues>({
+    resolver: zodResolver(quizFormSchema),
+    defaultValues: {
+      questions: [
+        {
+          question: "",
+          options: ["", "", "", ""],
+          answer: "",
+        },
+      ],
+    },
+  });
+
+  // Add these field arrays for quiz questions
+  const {
+    fields: questionFields,
+    append: appendQuestion,
+    remove: removeQuestion,
+  } = useFieldArray({
+    control: quizForm.control,
+    name: "questions",
   });
 
   // Function to handle adding chapters to a specific lesson
@@ -274,13 +322,10 @@ const CreateCoursePage = () => {
   // Handle lessons form submission (step 2)
   const onLessonsSubmit = async (data: LessonsFormValues) => {
     if (!courseData || !user) return;
-
     setIsSubmitting(true);
 
     try {
       const token = localStorage.getItem("authToken");
-
-      // 1. Create the course
       const courseResponse = await fetch(
         "http://localhost:8090/courses/create",
         {
@@ -302,12 +347,8 @@ const CreateCoursePage = () => {
         }
       );
 
-      if (!courseResponse.ok) {
-        throw new Error("Failed to create course");
-      }
-
-      // Parse the course ID from the response
-      const courseId = await courseResponse.text();
+      const newCourseId = await courseResponse.text();
+      setCourseId(newCourseId);
 
       // 2. Create lessons for the course
       const lessonPromises = data.lessons.map(async (lesson) => {
@@ -320,7 +361,7 @@ const CreateCoursePage = () => {
           body: JSON.stringify({
             title: lesson.title,
             chapters: lesson.chapters,
-            courseId: courseId,
+            courseId: newCourseId,
             order: lesson.order,
           }),
         });
@@ -332,11 +373,60 @@ const CreateCoursePage = () => {
         style: toastStyle,
       });
 
-      // Redirect to instructor courses page
-      router.push("/instructor");
+      // Instead of redirecting, move to quiz step
+      setCurrentStep(3);
     } catch (error) {
       console.error("Error creating course:", error);
       toast.error("Failed to create course. Please try again.", {
+        style: toastStyle,
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Add the quiz submission handler
+  const onQuizSubmit = async (data: QuizFormValues) => {
+    if (!courseId || !user) return;
+    setIsSubmitting(true);
+
+    try {
+      const token = localStorage.getItem("authToken");
+
+      // Format the data to use the actual answer text instead of the index
+      const formattedQuestions = data.questions.map((q) => {
+        const answerIndex = parseInt(q.answer);
+        return {
+          question: q.question,
+          options: q.options,
+          answer: q.options[answerIndex],
+        };
+      });
+
+      const response = await fetch("http://localhost:8090/quiz/add", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          courseId: courseId,
+          questions: formattedQuestions,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create quiz");
+      }
+
+      toast.success("Course and quiz created successfully!", {
+        style: toastStyle,
+      });
+
+      router.push("/instructor");
+    } catch (error) {
+      console.error("Error creating quiz:", error);
+      toast.error("Failed to create quiz. Please try again.", {
         style: toastStyle,
       });
     } finally {
@@ -396,10 +486,22 @@ const CreateCoursePage = () => {
               <div className="h-0.5 bg-gray-700 flex-grow self-center"></div>
               <div
                 className={`rounded-full w-8 h-8 flex items-center justify-center ${
-                  currentStep === 2 ? "bg-purple-600" : "bg-gray-700"
+                  currentStep === 2
+                    ? "bg-purple-600"
+                    : currentStep > 2
+                    ? "bg-green-600"
+                    : "bg-gray-700"
                 }`}
               >
                 2
+              </div>
+              <div className="h-0.5 bg-gray-700 flex-grow self-center"></div>
+              <div
+                className={`rounded-full w-8 h-8 flex items-center justify-center ${
+                  currentStep === 3 ? "bg-purple-600" : "bg-gray-700"
+                }`}
+              >
+                3
               </div>
             </motion.div>
 
@@ -411,7 +513,9 @@ const CreateCoursePage = () => {
             >
               {currentStep === 1
                 ? "Enter the basic details of your course"
-                : "Add lessons and chapters to your course"}
+                : currentStep === 2
+                ? "Add lessons and chapters to your course"
+                : "Create the course quiz"}
             </motion.p>
           </div>
         </motion.div>
@@ -767,6 +871,233 @@ const CreateCoursePage = () => {
                         disabled={isSubmitting}
                       >
                         {isSubmitting ? "Creating Course..." : "Create Course"}
+                      </Button>
+                    </motion.div>
+                  </div>
+                </form>
+              </Form>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Step 3: Quiz Form */}
+        {currentStep === 3 && courseId && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5 }}
+            className="space-y-6"
+          >
+            {/* Course summary - reuse from step 2 */}
+            <div className="bg-gray-800/40 rounded-xl border border-gray-700 p-6 mb-6">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="text-lg font-bold">{courseData?.title}</h3>
+                  <p className="text-gray-400 text-sm mt-1 line-clamp-1">
+                    {courseData?.description}
+                  </p>
+                  <div className="flex gap-3 mt-2">
+                    <span className="px-2 py-1 bg-gray-700/50 rounded-md text-xs text-gray-300">
+                      {courseData?.difficulty}
+                    </span>
+                    <span className="px-2 py-1 bg-gray-700/50 rounded-md text-xs text-gray-300">
+                      {courseData?.hours} hours
+                    </span>
+                    <span className="px-2 py-1 bg-gray-700/50 rounded-md text-xs text-gray-300">
+                      {courseData?.price}
+                    </span>
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={goBack}
+                  className="bg-gray-800 text-purple-400 border-gray-700 hover:bg-gray-700 hover:text-purple-300 hover:border-purple-500"
+                >
+                  <ChevronLeft className="mr-1 h-4 w-4" />
+                  Edit Details
+                </Button>
+              </div>
+            </div>
+
+            <div className="bg-gray-800/40 rounded-xl border border-gray-700 p-6 shadow-lg backdrop-blur-sm">
+              <div className="flex items-center gap-3 mb-6">
+                <HelpCircle className="text-purple-500" />
+                <h2 className="text-xl font-bold">Course Quiz</h2>
+              </div>
+
+              <Form {...quizForm}>
+                <form
+                  onSubmit={quizForm.handleSubmit(onQuizSubmit)}
+                  className="space-y-8"
+                >
+                  {questionFields.map((field, questionIndex) => (
+                    <div
+                      key={field.id}
+                      className="bg-gray-800 rounded-lg border border-gray-700 p-4 mb-4"
+                    >
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-medium flex items-center gap-2">
+                          <HelpCircle className="h-4 w-4 text-blue-400" />
+                          Question {questionIndex + 1}
+                        </h3>
+
+                        {questionFields.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => removeQuestion(questionIndex)}
+                            className="h-8 px-2 bg-red-900/30 hover:bg-red-800 text-red-300 border-red-800/50"
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" /> Remove Question
+                          </Button>
+                        )}
+                      </div>
+
+                      <div className="space-y-4">
+                        {/* Question text */}
+                        <FormField
+                          control={quizForm.control}
+                          name={`questions.${questionIndex}.question`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-gray-200">
+                                Question
+                              </FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="Enter your question"
+                                  {...field}
+                                  className="bg-gray-700/50 border-gray-600 focus:border-purple-500 text-white"
+                                />
+                              </FormControl>
+                              <FormMessage className="text-red-400" />
+                            </FormItem>
+                          )}
+                        />
+
+                        {/* Options */}
+                        <div className="space-y-3">
+                          <FormLabel className="text-gray-200">
+                            Options
+                          </FormLabel>
+                          {[0, 1, 2, 3].map((optionIndex) => (
+                            <FormField
+                              key={optionIndex}
+                              control={quizForm.control}
+                              name={`questions.${questionIndex}.options.${optionIndex}`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <div className="flex gap-2 items-center">
+                                      <Input
+                                        placeholder={`Option ${
+                                          optionIndex + 1
+                                        }`}
+                                        {...field}
+                                        className="bg-gray-700/50 border-gray-600 focus:border-purple-500 text-white"
+                                      />
+                                    </div>
+                                  </FormControl>
+                                  <FormMessage className="text-red-400" />
+                                </FormItem>
+                              )}
+                            />
+                          ))}
+                        </div>
+
+                        {/* Correct Answer */}
+                        <FormField
+                          control={quizForm.control}
+                          name={`questions.${questionIndex}.answer`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-gray-200">
+                                Correct Answer
+                              </FormLabel>
+                              <FormControl>
+                                <RadioGroup
+                                  onValueChange={field.onChange}
+                                  value={field.value}
+                                  className="space-y-2"
+                                >
+                                  {[0, 1, 2, 3].map((idx) => {
+                                    const optionText =
+                                      quizForm.getValues().questions[
+                                        questionIndex
+                                      ].options[idx] || "";
+                                    return (
+                                      <div
+                                        key={idx}
+                                        className="flex items-center space-x-2"
+                                      >
+                                        <RadioGroupItem
+                                          value={String(idx)}
+                                          id={`answer-${questionIndex}-${idx}`}
+                                          className="border-gray-600 text-purple-500"
+                                          disabled={!optionText.trim()}
+                                        />
+                                        <label
+                                          htmlFor={`answer-${questionIndex}-${idx}`}
+                                          className={`text-sm font-medium leading-none ${
+                                            optionText.trim()
+                                              ? "text-gray-300"
+                                              : "text-gray-500"
+                                          } peer-disabled:cursor-not-allowed peer-disabled:opacity-70`}
+                                        >
+                                          {optionText ||
+                                            `Option ${idx + 1} (empty)`}
+                                        </label>
+                                      </div>
+                                    );
+                                  })}
+                                </RadioGroup>
+                              </FormControl>
+                              <FormMessage className="text-red-400" />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+                  ))}
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() =>
+                      appendQuestion({
+                        question: "",
+                        options: ["", "", "", ""],
+                        answer: "",
+                      })
+                    }
+                    className="w-full py-6 border-dashed border-gray-700 text-purple-400 hover:text-purple-300 hover:border-purple-500 bg-gray-800/50 hover:bg-gray-800"
+                  >
+                    <Plus className="h-5 w-5 mr-2" /> Add New Question
+                  </Button>
+
+                  <div className="flex gap-4 justify-end pt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setCurrentStep(2)}
+                      className="px-6 py-5 bg-gray-800 border-gray-700 text-purple-400 hover:bg-gray-700 hover:text-purple-300 hover:border-purple-500"
+                      disabled={isSubmitting}
+                    >
+                      <ChevronLeft className="mr-2 h-4 w-4" />
+                      Back to Lessons
+                    </Button>
+
+                    <motion.div
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <Button
+                        type="submit"
+                        className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 px-8 py-5"
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting ? "Creating Quiz..." : "Complete Course"}
                       </Button>
                     </motion.div>
                   </div>

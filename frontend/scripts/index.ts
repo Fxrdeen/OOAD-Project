@@ -1,76 +1,19 @@
 import { MongoClient, ObjectId } from "mongodb";
 
-// Load environment variables
-// Consider using dotenv package here
-
-// MongoDB connection string - should be in .env file
 const uri =
   "mongodb+srv://fardeenclan:LKHvp18Gd3aDwz82@cluster0.gvb6eln.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 const dbName = "ooadproject";
 
-// Define lesson type
-interface Lesson {
+interface Question {
+  question: string;
+  options: string[];
+  answer: string;
+}
+
+interface Quiz {
   courseId: ObjectId;
-  title: string;
-  chapters: string[];
+  questions: Question[];
 }
-
-// Sample lessons data for Next.js concepts
-const createLessons = (courseId: ObjectId): Lesson[] => [
-  {
-    courseId,
-    title: "Introduction to Next.js",
-    chapters: [
-      "Next.js Fundamentals",
-      "Pages and Routing",
-      "Server-Side Rendering vs. Static Generation",
-    ],
-  },
-  {
-    courseId,
-    title: "Data Fetching and State Management",
-    chapters: [
-      "API Routes",
-      "SWR and React Query",
-      "Working with External APIs",
-    ],
-  },
-  {
-    courseId,
-    title: "Advanced Next.js Features",
-    chapters: [
-      "Middleware and Authentication",
-      "Image Optimization",
-      "Internationalization and Deployment",
-    ],
-  },
-  {
-    courseId,
-    title: "Next.js Project",
-    chapters: [
-      "Project Planning and Architecture",
-      "Implementation with Next.js",
-      "Testing and Performance Optimization",
-    ],
-  },
-];
-
-// Function to insert lessons for a specific course
-async function insertLessons(client: MongoClient, courseId: string) {
-  const db = client.db(dbName);
-  const lessonsCollection = db.collection("lessons");
-
-  // Generate lessons for this course
-  const lessons = createLessons(new ObjectId(courseId));
-
-  // Insert lessons
-  const result = await lessonsCollection.insertMany(lessons);
-  console.log(
-    `${result.insertedCount} lessons inserted for course ${courseId}`
-  );
-}
-
-// Main function to run the script
 
 console.log("Started");
 
@@ -81,27 +24,60 @@ const client = new MongoClient(uri, {
   socketTimeoutMS: 5000,
 });
 
+async function insertQuiz(client: MongoClient, courseId: ObjectId) {
+  const db = client.db(dbName);
+  const quizCollection = db.collection("quiz");
+
+  const javaBeginnerQuizzes = [
+    {
+      courseId: courseId,
+      questions: [
+        {
+          question: "What does HTML stand for?",
+          options: [
+            "Hypertext Markup Language",
+            "Hyperlink and Text Markup Language",
+            "Home Tool Markup Language",
+            "Hypertext Machine Language",
+          ],
+          answer: "Hypertext Markup Language",
+        },
+        {
+          question:
+            "Which CSS property is used to change the text color of an element?",
+          options: ["color", "text-color", "font-color", "text-style"],
+          answer: "color",
+        },
+        {
+          question: "Which HTML tag is used to create a hyperlink?",
+          options: ["<a>", "<link>", "<href>", "<url>"],
+          answer: "<a>",
+        },
+        {
+          question:
+            "Which CSS property is used to add space between the elements' border and its content?",
+          options: ["padding", "margin", "spacing", "border-spacing"],
+          answer: "padding",
+        },
+        {
+          question:
+            "Which HTML element is used to define the structure of an HTML document, including headings, paragraphs, or navigation?",
+          options: ["<div>", "<span>", "<section>", "<navigator>"],
+          answer: "<div>",
+        },
+      ],
+    },
+  ];
+
+  await quizCollection.insertMany(javaBeginnerQuizzes);
+}
+
 try {
   console.log("Attempting to connect to MongoDB...");
   await client.connect();
   console.log("Connected to MongoDB");
 
-  // Get all courses from the database
-  const db = client.db(dbName);
-  const coursesCollection = db.collection("courses");
-  const courses = await coursesCollection.find({}).toArray();
-
-  if (courses.length === 0) {
-    console.log("No courses found. Please add courses first.");
-    process.exit(1);
-  }
-
-  // Insert lessons for each course
-  // for (const course of courses) {
-  //   await insertLessons(client, course._id.toString());
-  // }
-
-  await insertLessons(client, "67e68be42f59df321f216c18");
+  await insertQuiz(client, new ObjectId("67f3eea4ba65c137d7b6694f"));
 
   console.log("Database seeding completed successfully");
 } catch (error) {

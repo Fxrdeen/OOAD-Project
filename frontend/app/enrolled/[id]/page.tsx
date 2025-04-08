@@ -4,7 +4,13 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Course, Lesson } from "@/types";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, PlayCircle } from "lucide-react";
+import {
+  CheckCircle,
+  PlayCircle,
+  Trophy,
+  RefreshCw,
+  Info as InfoIcon,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -51,6 +57,7 @@ const EnrolledCoursePage = () => {
   );
   const { id } = useParams();
   const [user, setUser] = useState<any>(null);
+  const [quizResponse, setQuizResponse] = useState<any>(null);
 
   // Function to check if a lesson is completed
   const isLessonCompleted = (lessonId: string) => {
@@ -64,7 +71,6 @@ const EnrolledCoursePage = () => {
     try {
       const token = localStorage.getItem("authToken");
       if (!token) return;
-
       const progressResponse = await fetch(
         `http://localhost:8090/lesson-progress/${user.id}/${id}`,
         {
@@ -76,7 +82,6 @@ const EnrolledCoursePage = () => {
 
       if (progressResponse.ok) {
         const progressData: LessonProgress[] = await progressResponse.json();
-        console.log("Progress data:", progressData);
         // Create a map of lessonId to completion status
         const completionMap: Record<string, boolean> = {};
 
@@ -84,11 +89,54 @@ const EnrolledCoursePage = () => {
           completionMap[progress.lessonId] = progress.completed;
         }
 
-        console.log("Lesson completion map:", completionMap);
         setCompletedLessons(completionMap);
       }
     } catch (error) {
       console.error("Error fetching lesson progress:", error);
+    }
+  };
+
+  // Add this function to fetch quiz response
+  const fetchQuizResponse = async () => {
+    if (!user || !id) return;
+
+    try {
+      const token = localStorage.getItem("authToken");
+      if (!token) return;
+
+      // Fix 1: Ensure user.id is accessed correctly
+      const userId = user.id;
+
+      // Fix 2: Make sure correct endpoint syntax
+      const response = await fetch(
+        `http://localhost:8090/quiz/response/${id}/${userId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      // Fix 3: Check not just if response is ok but also if it has data
+      if (response.ok) {
+        const data = await response.json();
+        // Only set quiz response if we got actual data
+        if (data && Object.keys(data).length > 0) {
+          setQuizResponse(data);
+          console.log("Quiz response fetched successfully:", data);
+        } else {
+          console.log("Quiz response is empty");
+          setQuizResponse(null);
+        }
+      } else {
+        // Fix 4: Clear quiz response if request fails
+        console.log("No quiz response found");
+        setQuizResponse(null);
+      }
+    } catch (error) {
+      console.error("Error fetching quiz response:", error);
+      // Fix 5: Clear quiz response on error
+      setQuizResponse(null);
     }
   };
 
@@ -109,7 +157,6 @@ const EnrolledCoursePage = () => {
 
         const parsedUser = JSON.parse(userData);
         setUser(parsedUser);
-
         // Fetch course details
         const courseResponse = await fetch(
           `http://localhost:8090/courses/${id}`,
@@ -140,7 +187,6 @@ const EnrolledCoursePage = () => {
               (a: Lesson, b: Lesson) => a.order - b.order
             );
             setLessons(sortedLessons);
-            console.log(sortedLessons);
             // Set first lesson and chapter as selected by default
             if (sortedLessons.length > 0) {
               setSelectedLesson(sortedLessons[0]);
@@ -152,6 +198,7 @@ const EnrolledCoursePage = () => {
 
             // Fetch lesson progress
             await fetchLessonProgress();
+            await fetchQuizResponse();
           }
         }
       } catch (error) {
@@ -172,6 +219,13 @@ const EnrolledCoursePage = () => {
   useEffect(() => {
     if (user) {
       fetchLessonProgress();
+    }
+  }, [user, id]);
+
+  // Add this useEffect to fetch quiz response when user changes
+  useEffect(() => {
+    if (user && id) {
+      fetchQuizResponse();
     }
   }, [user, id]);
 
@@ -222,7 +276,6 @@ const EnrolledCoursePage = () => {
         return;
       }
 
-      // Call the API to mark lesson as complete
       const response = await fetch(
         `http://localhost:8090/lesson-progress/complete/${user.id}/${id}/${selectedLesson.id}`,
         {
@@ -415,59 +468,110 @@ const EnrolledCoursePage = () => {
                 <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="p-2 bg-blue-900/30 rounded-lg">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="24"
-                        height="24"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="text-blue-500"
-                      >
-                        <circle cx="12" cy="12" r="10" />
-                        <path d="M12 16v-4" />
-                        <path d="M12 8h.01" />
-                      </svg>
-                    </div>
-                    <h2 className="text-xl font-bold text-white">
-                      Course Quiz
-                    </h2>
-                  </div>
-
-                  <p className="text-gray-300 mb-6">
-                    Congratulations on completing all lessons! Test your
-                    knowledge and earn your certificate by taking the final
-                    quiz.
-                  </p>
-
-                  <div className="flex justify-center">
-                    <Link href={`/enrolled/${id}/quiz`}>
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium rounded-lg flex items-center gap-2"
-                      >
+                      {quizResponse ? (
+                        <Trophy className="h-6 w-6 text-blue-500" />
+                      ) : (
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
-                          width="20"
-                          height="20"
+                          width="24"
+                          height="24"
                           viewBox="0 0 24 24"
                           fill="none"
                           stroke="currentColor"
                           strokeWidth="2"
                           strokeLinecap="round"
                           strokeLinejoin="round"
+                          className="text-blue-500"
                         >
-                          <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
-                          <path d="m9 9.5 1.5 2L15 7" />
+                          <circle cx="12" cy="12" r="10" />
+                          <path d="M12 16v-4" />
+                          <path d="M12 8h.01" />
                         </svg>
-                        Take Quiz
-                      </motion.button>
-                    </Link>
+                      )}
+                    </div>
+                    <h2 className="text-xl font-bold text-white">
+                      Course Quiz
+                    </h2>
                   </div>
+
+                  {quizResponse ? (
+                    <>
+                      <div className="flex items-center gap-4 mb-6">
+                        <div className="flex-1">
+                          <p className="text-gray-300 mb-2">
+                            You have already completed this quiz
+                          </p>
+                          <div className="flex items-center gap-2">
+                            <span className="text-2xl font-bold text-white">
+                              Score: {quizResponse.score}/
+                              {quizResponse.answers.length}
+                            </span>
+                            <span className="text-lg text-gray-400">
+                              (
+                              {Math.round(
+                                (quizResponse.score /
+                                  quizResponse.answers.length) *
+                                  100
+                              )}
+                              %)
+                            </span>
+                          </div>
+                        </div>
+                        <Link href={`/enrolled/${id}/quiz`}>
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            className="px-6 py-2 bg-gray-700 hover:bg-gray-600 text-white font-medium rounded-lg flex items-center gap-2"
+                          >
+                            <RefreshCw className="h-4 w-4" />
+                            Retake Quiz
+                          </motion.button>
+                        </Link>
+                      </div>
+                      <div className="bg-gray-900/50 rounded-lg p-4 border border-gray-700">
+                        <div className="flex items-center gap-2 text-gray-300">
+                          <InfoIcon className="h-4 w-4" />
+                          <span>
+                            You can retake the quiz to improve your score
+                          </span>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-gray-300 mb-6">
+                        Congratulations on completing all lessons! Test your
+                        knowledge and earn your certificate by taking the final
+                        quiz.
+                      </p>
+
+                      <div className="flex justify-center">
+                        <Link href={`/enrolled/${id}/quiz`}>
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium rounded-lg flex items-center gap-2"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="20"
+                              height="20"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+                              <path d="m9 9.5 1.5 2L15 7" />
+                            </svg>
+                            Take Quiz
+                          </motion.button>
+                        </Link>
+                      </div>
+                    </>
+                  )}
                 </div>
               </motion.div>
             )}
