@@ -9,4 +9,5 @@ public interface EnrollRepository extends MongoRepository<Enroll, String> {
     Enroll findByUserIdAndCourseId(String userId, String courseId);
     List<Enroll> findByUserId(String userId);
     List<Enroll> findAllStudentsByCourseId(String courseId);
+    void deleteByUserIdAndCourseId(String userId, String courseId);
 }

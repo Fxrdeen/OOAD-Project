@@ -209,16 +209,6 @@ const InstructorCourseCard = ({
         </div>
 
         <div className="flex flex-wrap gap-3 items-center">
-          <Link href={`/instructor/courses/${course.id}/manage`}>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              className="px-4 py-2 rounded-md bg-gradient-to-r from-purple-600/80 to-blue-600/80 text-white hover:from-purple-600 hover:to-blue-600 flex items-center gap-2"
-            >
-              <PenLine size={16} />
-              Manage Course
-            </motion.button>
-          </Link>
-
           <Link href={`/instructor/courses/${course.id}/students`}>
             <motion.button
               whileHover={{ scale: 1.05 }}

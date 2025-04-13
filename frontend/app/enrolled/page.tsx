@@ -77,7 +77,39 @@ const Navbar = ({
 };
 
 // Course Card component
-const CourseCard = ({ course, index }: { course: Course; index: number }) => {
+const CourseCard = ({
+  course,
+  index,
+  courseData,
+  handleDeEnroll,
+}: {
+  course: Course;
+  index: number;
+  courseData: EnrolledCourse[];
+  handleDeEnroll: (
+    userId: string,
+    courseId: string,
+    hasProgress: boolean
+  ) => void;
+}) => {
+  const [user, setUser] = useState<any>(null);
+  const [hasCompletedLessons, setHasCompletedLessons] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(false);
+
+  useEffect(() => {
+    // Get user data from local storage
+    if (typeof window !== "undefined") {
+      const userData = localStorage.getItem("userData");
+      if (userData) {
+        setUser(JSON.parse(userData));
+      }
+    }
+
+    // Check if this course has any completed lessons
+    const enrollmentData = courseData.find((c) => c.courseId === course.id);
+    setHasCompletedLessons(enrollmentData?.hasProgress || false);
+  }, [course.id, courseData]);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 50 }}
@@ -124,6 +156,32 @@ const CourseCard = ({ course, index }: { course: Course; index: number }) => {
               Continue Learning
             </motion.button>
           </Link>
+
+          <div className="relative">
+            <motion.button
+              whileHover={!hasCompletedLessons ? { scale: 1.05 } : undefined}
+              className={`px-4 py-2 rounded-md border ${
+                hasCompletedLessons
+                  ? "bg-gray-700/50 border-gray-600 text-gray-500 cursor-not-allowed"
+                  : "bg-red-900/30 border-red-800/50 text-red-300 hover:bg-red-900/50 hover:border-red-700"
+              }`}
+              onClick={() => {
+                if (!hasCompletedLessons && user) {
+                  handleDeEnroll(user.id, course.id, hasCompletedLessons);
+                }
+              }}
+              onMouseEnter={() => hasCompletedLessons && setShowTooltip(true)}
+              onMouseLeave={() => setShowTooltip(false)}
+            >
+              De-enroll
+            </motion.button>
+
+            {showTooltip && hasCompletedLessons && (
+              <div className="absolute -top-12 right-0 w-60 p-2 bg-gray-900 border border-gray-700 rounded-md shadow-lg text-sm text-gray-300">
+                You have already completed lessons from this course
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </motion.div>
@@ -142,6 +200,63 @@ const EnrolledPage = () => {
       localStorage.removeItem("authToken");
       localStorage.removeItem("userData");
       window.location.href = "/login";
+    }
+  };
+
+  const handleDeEnroll = async (
+    userId: string,
+    courseId: string,
+    hasProgress: boolean
+  ) => {
+    if (hasProgress) return; // Safety check, don't de-enroll if there's progress
+
+    try {
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        toast.error("Authentication required to de-enroll", {
+          className: "bg-gray-800 text-white border border-gray-700",
+        });
+        return;
+      }
+
+      // Show confirmation dialog using toast
+      toast.promise(
+        async () => {
+          const response = await fetch(
+            `http://localhost:8090/enroll/${userId}/${courseId}`,
+            {
+              method: "DELETE",
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+
+          if (!response.ok) {
+            throw new Error("Failed to de-enroll from course");
+          }
+
+          // Update local state to remove the de-enrolled course
+          setCourseData((prev) =>
+            prev.filter((course) => course.courseId !== courseId)
+          );
+          setEnrolledCourses((prev) =>
+            prev.filter((course) => course.id !== courseId)
+          );
+
+          return "Successfully de-enrolled from course";
+        },
+        {
+          loading: "De-enrolling from course...",
+          success: (message) => message,
+          error: "Failed to de-enroll. Please try again.",
+        }
+      );
+    } catch (error) {
+      console.error("Error de-enrolling from course:", error);
+      toast.error("Failed to de-enroll from course", {
+        className: "bg-gray-800 text-white border border-gray-700",
+      });
     }
   };
 
@@ -164,15 +279,46 @@ const EnrolledPage = () => {
             );
             if (response.ok) {
               const data = await response.json();
-              setCourseData(data);
+
+              // Check for lesson progress for each enrollment
+              const enrollmentPromises = data.map(
+                async (enrollment: EnrolledCourse) => {
+                  const progressResponse = await fetch(
+                    `http://localhost:8090/lesson-progress/${parsedUser.id}/${enrollment.courseId}`,
+                    {
+                      headers: {
+                        Authorization: `Bearer ${token}`,
+                      },
+                    }
+                  );
+
+                  if (progressResponse.ok) {
+                    const progressData = await progressResponse.json();
+                    // Mark enrollment as having progress if any lessons are completed
+                    return {
+                      ...enrollment,
+                      hasProgress: progressData && progressData.length > 0,
+                    };
+                  }
+
+                  return {
+                    ...enrollment,
+                    hasProgress: false,
+                  };
+                }
+              );
+
+              const enhancedData = await Promise.all(enrollmentPromises);
+              setCourseData(enhancedData);
 
               // Create an array to store all course fetch promises
-              const coursePromises = data.map((course: EnrolledCourse) =>
-                fetch(`http://localhost:8090/courses/${course.courseId}`, {
-                  headers: {
-                    Authorization: `Bearer ${token}`,
-                  },
-                }).then((res) => res.json())
+              const coursePromises = enhancedData.map(
+                (course: EnrolledCourse) =>
+                  fetch(`http://localhost:8090/courses/${course.courseId}`, {
+                    headers: {
+                      Authorization: `Bearer ${token}`,
+                    },
+                  }).then((res) => res.json())
               );
 
               // Wait for all course data to be fetched
@@ -240,7 +386,13 @@ const EnrolledPage = () => {
         {enrolledCourses.length > 0 ? (
           <div className="space-y-6">
             {enrolledCourses.map((course, index) => (
-              <CourseCard key={course.id} course={course} index={index} />
+              <CourseCard
+                key={course.id}
+                course={course}
+                index={index}
+                courseData={courseData}
+                handleDeEnroll={handleDeEnroll}
+              />
             ))}
           </div>
         ) : (

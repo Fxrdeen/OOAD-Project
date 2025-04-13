@@ -28,4 +28,8 @@ public class EnrollService {
     public List<Enroll> findAllStudentsByCourseId(String courseId) {
         return enrollRepository.findAllStudentsByCourseId(courseId);
     }
+
+    public void deleteEnrollment(String userId, String courseId) {
+        enrollRepository.deleteByUserIdAndCourseId(userId, courseId);
+    }
 }
