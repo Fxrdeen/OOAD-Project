@@ -501,21 +501,6 @@ const StudentReportPage = () => {
           >
             <h2 className="text-xl font-bold mb-4">Course Progress</h2>
 
-            <div className="mb-6">
-              <div className="flex justify-between text-sm mb-2">
-                <span className="text-gray-400">Overall Completion</span>
-                <span className="text-white font-medium">
-                  {completionPercentage}%
-                </span>
-              </div>
-              <div className="w-full bg-gray-700 rounded-full h-3">
-                <div
-                  className="bg-gradient-to-r from-blue-600 to-indigo-600 h-3 rounded-full"
-                  style={{ width: `${completionPercentage}%` }}
-                ></div>
-              </div>
-            </div>
-
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
               <div className="bg-gray-700/30 rounded-lg p-4">
                 <BookOpen className="h-6 w-6 mx-auto mb-2 text-blue-400" />
